@@ -25,10 +25,11 @@ keystrokes it takes to land on it:
 
 - First color: `fx` lands here.
 - Second color: `2fx` lands here.
+- Third color: `3fx` lands here.
 
 You type real characters from the text. There are no hint labels to read
 and no new motions to learn. If the character you want is not lit, it is
-more than two occurrences away, and a plugin built for long jumps is the
+more than three occurrences away, and a plugin built for long jumps is the
 better tool.
 
 Quickdraw's only options are its two colors. It requires Neovim 0.10+.
@@ -51,6 +52,7 @@ opts = {
     colors = {
         rank1 = "#a8c080", -- matcha
         rank2 = "#e07a5f", -- terracotta
+        rank3 = "#8da9c4", -- stoneware blue
     },
 }
 ```
@@ -88,6 +90,7 @@ in setup win over colorscheme definitions:
 | ---------------- | ------------------- | ----------------------- |
 | `QuickdrawRank1` | `#a8c080` (matcha), bold     | Lands with `fx`         |
 | `QuickdrawRank2` | `#e07a5f` (terracotta), bold     | Lands with `2fx`        |
+| `QuickdrawRank3` | `#8da9c4` (stoneware blue), bold | Lands with `3fx`        |
 | `QuickdrawDim`   | Linked to `Comment` | Everything out of reach |
 
 `:checkhealth quickdraw` reports version, keymaps, and conflicts.

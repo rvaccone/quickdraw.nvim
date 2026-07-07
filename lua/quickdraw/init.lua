@@ -10,7 +10,7 @@ local ESC = api.nvim_replace_termcodes("<Esc>", true, true, true)
 local CTRL_C = api.nvim_replace_termcodes("<C-c>", true, true, true)
 local PLUG = api.nvim_replace_termcodes("<Plug>(quickdraw-op)", true, true, true)
 
-local RANK_GROUPS = { "QuickdrawRank1", "QuickdrawRank2" }
+local RANK_GROUPS = { "QuickdrawRank1", "QuickdrawRank2", "QuickdrawRank3" }
 
 ---@type { kind: "f"|"t", backward: boolean, char: string }|nil
 local last = nil
@@ -21,11 +21,12 @@ local trail_active = false
 ---@class QuickdrawColors
 ---@field rank1? string "#rrggbb" for the one-keystroke mark
 ---@field rank2? string "#rrggbb" for the two-keystroke mark
+---@field rank3? string "#rrggbb" for the three-keystroke mark
 
-local DEFAULT_COLORS = { rank1 = "#a8c080", rank2 = "#e07a5f" }
+local DEFAULT_COLORS = { rank1 = "#a8c080", rank2 = "#e07a5f", rank3 = "#8da9c4" }
 
 local colors = vim.deepcopy(DEFAULT_COLORS)
-local custom = { rank1 = false, rank2 = false }
+local custom = { rank1 = false, rank2 = false, rank3 = false }
 
 ---@param hex string
 ---@return integer
@@ -37,7 +38,9 @@ end
 --- identity colors — never boxed with a background. Guidance must stand
 --- apart from the buffer, so the colors are quickdraw's own rather than
 --- theme-derived: matcha for the common one-keystroke mark (the calm
---- one), terracotta for the two-keystroke accent. Colors given in setup
+--- one), terracotta for the two-keystroke accent, and stoneware blue for
+--- the three-keystroke mark, the sparsest and quietest tier, so
+--- prominence mirrors cost. Colors given in setup
 --- are authoritative; the defaults stay overridable by highlight groups.
 local function ensure_highlights()
 	api.nvim_set_hl(0, "QuickdrawRank1", {
@@ -49,6 +52,11 @@ local function ensure_highlights()
 		fg = to_int(colors.rank2),
 		bold = true,
 		default = not custom.rank2,
+	})
+	api.nvim_set_hl(0, "QuickdrawRank3", {
+		fg = to_int(colors.rank3),
+		bold = true,
+		default = not custom.rank3,
 	})
 	api.nvim_set_hl(0, "QuickdrawDim", { link = "Comment", default = true })
 end
@@ -134,7 +142,7 @@ local function collect_marks(backward)
 		if ch.c ~= " " and ch.c ~= "\t" then
 			local n = (counts[ch.c] or 0) + 1
 			counts[ch.c] = n
-			if n <= 2 then
+			if n <= 3 then
 				marks[#marks + 1] = {
 					l = l,
 					col = ch.col,
@@ -158,7 +166,7 @@ local function set_mark(mark)
 end
 
 --- Color every reachable character by its occurrence rank: rank 1 lands
---- with `fx`, rank 2 with `2fx`. Whitespace is
+--- with `fx`, rank 2 with `2fx`, rank 3 with `3fx`. Whitespace is
 --- jumpable but never painted. Everything else dims.
 ---@param backward boolean
 function M._paint(backward)
@@ -180,7 +188,7 @@ local function paint_trail(char)
 			local l, ch = item[1], item[2]
 			if ch.c == char then
 				n = n + 1
-				if n > 2 then
+				if n > 3 then
 					break
 				end
 				api.nvim_buf_set_extmark(0, ns, l - 1, ch.col, {
@@ -354,7 +362,7 @@ function M.setup(opts)
 			error("quickdraw.nvim: `colors` must be a table")
 		end
 		for key, value in pairs(opts.colors) do
-			if key ~= "rank1" and key ~= "rank2" then
+			if key ~= "rank1" and key ~= "rank2" and key ~= "rank3" then
 				error(("quickdraw.nvim: unknown color `%s`"):format(key))
 			end
 			if type(value) ~= "string" or not value:match("^#%x%x%x%x%x%x$") then
