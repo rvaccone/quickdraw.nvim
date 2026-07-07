@@ -23,6 +23,9 @@ local trail_active = false
 ---@field rank2? string "#rrggbb" for the two-keystroke mark
 ---@field rank3? string "#rrggbb" for the three-keystroke mark
 
+---@class QuickdrawConfig
+---@field colors? QuickdrawColors
+
 local DEFAULT_COLORS = { rank1 = "#a8c080", rank2 = "#e07a5f", rank3 = "#8da9c4" }
 
 local colors = vim.deepcopy(DEFAULT_COLORS)
@@ -366,7 +369,7 @@ end
 
 --- The colors are the only options. Validation is strict and runs before
 --- anything is applied, so a bad config changes nothing.
----@param opts { colors?: QuickdrawColors }|nil
+---@param opts QuickdrawConfig|nil
 function M.setup(opts)
 	opts = opts or {}
 	for key in pairs(opts) do

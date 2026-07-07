@@ -41,6 +41,7 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim) (recommended):
 ```lua
 {
     "rvaccone/quickdraw.nvim",
+    ---@type QuickdrawConfig
     opts = {},
 }
 ```
