@@ -10,7 +10,7 @@ local ESC = api.nvim_replace_termcodes("<Esc>", true, true, true)
 local CTRL_C = api.nvim_replace_termcodes("<C-c>", true, true, true)
 local PLUG = api.nvim_replace_termcodes("<Plug>(quickdraw-op)", true, true, true)
 
-local RANK_GROUPS = { "QuickdrawRank1", "QuickdrawRank2", "QuickdrawRank3" }
+local RANK_GROUPS = { "QuickdrawRank1", "QuickdrawRank2" }
 
 ---@type { kind: "f"|"t", backward: boolean, char: string }|nil
 local last = nil
@@ -32,7 +32,7 @@ local function fg_of(names, fallback)
 end
 
 --- The letters themselves are restyled — bold, colored from your theme's
---- diagnostic palette so the three ranks are unmistakably distinct — never
+--- diagnostic palette so the two ranks are unmistakably distinct — never
 --- boxed with a background. Override the groups to restyle.
 local function ensure_highlights()
 	api.nvim_set_hl(0, "QuickdrawRank1", {
@@ -45,30 +45,10 @@ local function ensure_highlights()
 		bold = true,
 		default = true,
 	})
-	api.nvim_set_hl(0, "QuickdrawRank3", {
-		fg = fg_of({ "DiagnosticInfo", "Function" }, 0x5FAFFF),
-		bold = true,
-		default = true,
-	})
 	api.nvim_set_hl(0, "QuickdrawDim", { link = "Comment", default = true })
 end
 
-local generation = 0
-local timers = {}
-
-local function stop_timers()
-	for timer in pairs(timers) do
-		if not timer:is_closing() then
-			timer:stop()
-			timer:close()
-		end
-		timers[timer] = nil
-	end
-end
-
 local function clear()
-	generation = generation + 1
-	stop_timers()
 	trail_active = false
 	api.nvim_buf_clear_namespace(0, ns, 0, -1)
 end
@@ -149,7 +129,7 @@ local function collect_marks(backward)
 		if ch.c ~= " " and ch.c ~= "\t" then
 			local n = (counts[ch.c] or 0) + 1
 			counts[ch.c] = n
-			if n <= 3 then
+			if n <= 2 then
 				marks[#marks + 1] = {
 					l = l,
 					col = ch.col,
@@ -173,7 +153,7 @@ local function set_mark(mark)
 end
 
 --- Color every reachable character by its occurrence rank: rank 1 lands
---- with `fx`, rank 2 with `2fx`, rank 3 with `3fx`. Whitespace is
+--- with `fx`, rank 2 with `2fx`. Whitespace is
 --- jumpable but never painted. Everything else dims.
 ---@param backward boolean
 function M._paint(backward)
@@ -182,61 +162,6 @@ function M._paint(backward)
 	for _, mark in ipairs(collect_marks(backward)) do
 		set_mark(mark)
 	end
-end
-
-local BLOOM_MS_PER_LINE = 7
-
---- The bloom: dim lands at once with the cursor line's targets, then the
---- ranks sweep outward one line-distance at a time while you hold the
---- key. Any keypress interrupts mid-sweep; typing at speed sees at most
---- one frame.
----@param backward boolean
-local function reveal(backward)
-	clear()
-	local gen = generation
-	paint_dim()
-
-	local pending = collect_marks(backward)
-	table.sort(pending, function(a, b)
-		return a.dist < b.dist
-	end)
-
-	local index = 1
-	while pending[index] and pending[index].dist == 0 do
-		set_mark(pending[index])
-		index = index + 1
-	end
-	vim.cmd("redraw")
-	if not pending[index] then
-		return
-	end
-
-	local uv = vim.uv or vim.loop
-	local started = uv.now()
-	local timer = assert(uv.new_timer())
-	timers[timer] = true
-	timer:start(
-		16,
-		16,
-		vim.schedule_wrap(function()
-			if gen ~= generation then
-				return
-			end
-			local through = math.floor((uv.now() - started) / BLOOM_MS_PER_LINE)
-			while pending[index] and pending[index].dist <= through do
-				set_mark(pending[index])
-				index = index + 1
-			end
-			vim.cmd("redraw")
-			if not pending[index] then
-				if not timer:is_closing() then
-					timer:stop()
-					timer:close()
-				end
-				timers[timer] = nil
-			end
-		end)
-	)
 end
 
 --- After landing, the nearest occurrences of the character stay lit so
@@ -250,7 +175,7 @@ local function paint_trail(char)
 			local l, ch = item[1], item[2]
 			if ch.c == char then
 				n = n + 1
-				if n > 3 then
+				if n > 2 then
 					break
 				end
 				api.nvim_buf_set_extmark(0, ns, l - 1, ch.col, {
@@ -373,7 +298,8 @@ local function motion(kind, backward)
 	return function()
 		local count = vim.v.count1
 		local operator_pending = api.nvim_get_mode().mode:sub(1, 2) == "no"
-		reveal(backward)
+		M._paint(backward)
+		vim.cmd("redraw")
 
 		local ok, char = pcall(fn.getcharstr)
 		clear()

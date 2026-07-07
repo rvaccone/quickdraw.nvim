@@ -25,11 +25,10 @@ keystrokes it takes to land on it:
 
 - First color: `fx` lands here.
 - Second color: `2fx` lands here.
-- Third color: `3fx` lands here.
 
 You type real characters from the text. There are no hint labels to read
 and no new motions to learn. If the character you want is not lit, it is
-more than three occurrences away, and a plugin built for long jumps is the
+more than two occurrences away, and a plugin built for long jumps is the
 better tool.
 
 Quickdraw has no configuration. It requires Neovim 0.10+.
@@ -55,9 +54,7 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim) (recommended):
   backward. Folded lines are skipped: if you cannot see it, you cannot
   target it.
 - Highlights appear the moment you press the key and clear the moment you
-  act. The reveal blooms outward from your cursor line while you hold the
-  key; any keypress interrupts it instantly. Whitespace is jumpable but
-  never painted.
+  act. Whitespace is jumpable but never painted.
 - Counts work natively: the tier colors are exactly the counts you can
   type.
 - `;` repeats and `,` reverses. After you land, the nearest occurrences of
@@ -71,7 +68,7 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim) (recommended):
 ## Highlights
 
 The letters themselves are recolored and bolded; nothing is drawn behind
-them. The three rank colors come from your theme's diagnostic palette, so
+them. The two rank colors come from your theme's diagnostic palette, so
 they read as distinct in any colorscheme, and transparency carries
 through. Override any group to restyle:
 
@@ -79,7 +76,6 @@ through. Override any group to restyle:
 | ---------------- | -------------------------- | ----------------------- |
 | `QuickdrawRank1` | `DiagnosticError` fg, bold | Lands with `fx`         |
 | `QuickdrawRank2` | `DiagnosticWarn` fg, bold  | Lands with `2fx`        |
-| `QuickdrawRank3` | `DiagnosticInfo` fg, bold  | Lands with `3fx`        |
 | `QuickdrawDim`   | Linked to `Comment`        | Everything out of reach |
 
 `:checkhealth quickdraw` reports version, keymaps, and conflicts.
