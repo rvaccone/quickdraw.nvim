@@ -18,31 +18,19 @@ local last = nil
 local pending_op = nil
 local trail_active = false
 
----@param names string[]
----@param fallback integer
----@return integer
-local function fg_of(names, fallback)
-	for _, name in ipairs(names) do
-		local ok, hl = pcall(api.nvim_get_hl, 0, { name = name, link = false })
-		if ok and hl.fg then
-			return hl.fg
-		end
-	end
-	return fallback
-end
-
---- The letters themselves are restyled — bold, colored from your theme's
---- code palette — never boxed with a background. The dim supplies the
---- contrast, so the targets wear ordinary syntax colors rather than
---- alarm colors. Override the groups to restyle.
+--- The letters themselves are restyled — bold, in quickdraw's own two
+--- identity colors — never boxed with a background. Guidance must stand
+--- apart from the buffer, so the colors deliberately come from outside
+--- typical code palettes: theme-derived colors are either alarms or
+--- camouflage. Override the groups to restyle.
 local function ensure_highlights()
 	api.nvim_set_hl(0, "QuickdrawRank1", {
-		fg = fg_of({ "Function", "Identifier" }, 0x87D787),
+		fg = 0xFF5FAF,
 		bold = true,
 		default = true,
 	})
 	api.nvim_set_hl(0, "QuickdrawRank2", {
-		fg = fg_of({ "Constant", "Number", "Special" }, 0xD7AFFF),
+		fg = 0x00D7FF,
 		bold = true,
 		default = true,
 	})
