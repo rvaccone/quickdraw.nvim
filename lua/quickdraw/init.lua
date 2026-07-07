@@ -32,16 +32,17 @@ local function fg_of(names, fallback)
 end
 
 --- The letters themselves are restyled — bold, colored from your theme's
---- diagnostic palette so the two ranks are unmistakably distinct — never
---- boxed with a background. Override the groups to restyle.
+--- code palette — never boxed with a background. The dim supplies the
+--- contrast, so the targets wear ordinary syntax colors rather than
+--- alarm colors. Override the groups to restyle.
 local function ensure_highlights()
 	api.nvim_set_hl(0, "QuickdrawRank1", {
-		fg = fg_of({ "DiagnosticError", "ErrorMsg" }, 0xFF5F5F),
+		fg = fg_of({ "Function", "Identifier" }, 0x87D787),
 		bold = true,
 		default = true,
 	})
 	api.nvim_set_hl(0, "QuickdrawRank2", {
-		fg = fg_of({ "DiagnosticWarn", "WarningMsg" }, 0xFFAF00),
+		fg = fg_of({ "Constant", "Number", "Special" }, 0xD7AFFF),
 		bold = true,
 		default = true,
 	})

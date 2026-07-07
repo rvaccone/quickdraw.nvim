@@ -68,14 +68,14 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim) (recommended):
 ## Highlights
 
 The letters themselves are recolored and bolded; nothing is drawn behind
-them. The two rank colors come from your theme's diagnostic palette, so
-they read as distinct in any colorscheme, and transparency carries
-through. Override any group to restyle:
+them. The rank colors come from your theme's code palette, not its alarm
+palette: the dim supplies the contrast, so targets stay calm while still
+reading clearly. Override any group to restyle:
 
 | Group            | Default                    | Meaning                 |
 | ---------------- | -------------------------- | ----------------------- |
-| `QuickdrawRank1` | `DiagnosticError` fg, bold | Lands with `fx`         |
-| `QuickdrawRank2` | `DiagnosticWarn` fg, bold  | Lands with `2fx`        |
+| `QuickdrawRank1` | `Function` fg, bold        | Lands with `fx`         |
+| `QuickdrawRank2` | `Constant` fg, bold        | Lands with `2fx`        |
 | `QuickdrawDim`   | Linked to `Comment`        | Everything out of reach |
 
 `:checkhealth quickdraw` reports version, keymaps, and conflicts.
