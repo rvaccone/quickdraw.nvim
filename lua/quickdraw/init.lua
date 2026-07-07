@@ -18,16 +18,57 @@ local last = nil
 local pending_op = nil
 local trail_active = false
 
---- Pure links: the highlights inherit any colorscheme, including
---- transparent backgrounds. Override the groups to restyle.
+---@param names string[]
+---@param fallback integer
+---@return integer
+local function fg_of(names, fallback)
+	for _, name in ipairs(names) do
+		local ok, hl = pcall(api.nvim_get_hl, 0, { name = name, link = false })
+		if ok and hl.fg then
+			return hl.fg
+		end
+	end
+	return fallback
+end
+
+--- The letters themselves are restyled — bold, colored from your theme's
+--- diagnostic palette so the three ranks are unmistakably distinct — never
+--- boxed with a background. Override the groups to restyle.
 local function ensure_highlights()
-	api.nvim_set_hl(0, "QuickdrawRank1", { link = "IncSearch", default = true })
-	api.nvim_set_hl(0, "QuickdrawRank2", { link = "Search", default = true })
-	api.nvim_set_hl(0, "QuickdrawRank3", { link = "Substitute", default = true })
+	api.nvim_set_hl(0, "QuickdrawRank1", {
+		fg = fg_of({ "DiagnosticError", "ErrorMsg" }, 0xFF5F5F),
+		bold = true,
+		default = true,
+	})
+	api.nvim_set_hl(0, "QuickdrawRank2", {
+		fg = fg_of({ "DiagnosticWarn", "WarningMsg" }, 0xFFAF00),
+		bold = true,
+		default = true,
+	})
+	api.nvim_set_hl(0, "QuickdrawRank3", {
+		fg = fg_of({ "DiagnosticInfo", "Function" }, 0x5FAFFF),
+		bold = true,
+		default = true,
+	})
 	api.nvim_set_hl(0, "QuickdrawDim", { link = "Comment", default = true })
 end
 
+local generation = 0
+local timers = {}
+
+local function stop_timers()
+	for timer in pairs(timers) do
+		if not timer:is_closing() then
+			timer:stop()
+			timer:close()
+		end
+		timers[timer] = nil
+	end
+end
+
 local function clear()
+	generation = generation + 1
+	stop_timers()
 	trail_active = false
 	api.nvim_buf_clear_namespace(0, ns, 0, -1)
 end
@@ -77,13 +118,7 @@ local function chars_ahead(backward)
 	return list
 end
 
---- Color every reachable character by its occurrence rank: rank 1 lands
---- with `fx`, rank 2 with `2fx`, rank 3 with `3fx`. Whitespace is
---- jumpable but never painted. Everything else dims.
----@param backward boolean
-function M._paint(backward)
-	clear()
-
+local function paint_dim()
 	for l = fn.line("w0"), fn.line("w$") do
 		local width = #fn.getline(l)
 		if width > 0 then
@@ -94,22 +129,114 @@ function M._paint(backward)
 			})
 		end
 	end
+end
 
+---@class QuickdrawMark
+---@field l integer
+---@field col integer
+---@field len integer
+---@field group string
+---@field dist integer Line distance from the cursor
+
+---@param backward boolean
+---@return QuickdrawMark[]
+local function collect_marks(backward)
+	local cursor_line = api.nvim_win_get_cursor(0)[1]
 	local counts = {}
+	local marks = {}
 	for _, item in ipairs(chars_ahead(backward)) do
 		local l, ch = item[1], item[2]
 		if ch.c ~= " " and ch.c ~= "\t" then
 			local n = (counts[ch.c] or 0) + 1
 			counts[ch.c] = n
 			if n <= 3 then
-				api.nvim_buf_set_extmark(0, ns, l - 1, ch.col, {
-					end_col = ch.col + #ch.c,
-					hl_group = RANK_GROUPS[n],
-					priority = 210,
-				})
+				marks[#marks + 1] = {
+					l = l,
+					col = ch.col,
+					len = #ch.c,
+					group = RANK_GROUPS[n],
+					dist = math.abs(l - cursor_line),
+				}
 			end
 		end
 	end
+	return marks
+end
+
+---@param mark QuickdrawMark
+local function set_mark(mark)
+	api.nvim_buf_set_extmark(0, ns, mark.l - 1, mark.col, {
+		end_col = mark.col + mark.len,
+		hl_group = mark.group,
+		priority = 210,
+	})
+end
+
+--- Color every reachable character by its occurrence rank: rank 1 lands
+--- with `fx`, rank 2 with `2fx`, rank 3 with `3fx`. Whitespace is
+--- jumpable but never painted. Everything else dims.
+---@param backward boolean
+function M._paint(backward)
+	clear()
+	paint_dim()
+	for _, mark in ipairs(collect_marks(backward)) do
+		set_mark(mark)
+	end
+end
+
+local BLOOM_MS_PER_LINE = 7
+
+--- The bloom: dim lands at once with the cursor line's targets, then the
+--- ranks sweep outward one line-distance at a time while you hold the
+--- key. Any keypress interrupts mid-sweep; typing at speed sees at most
+--- one frame.
+---@param backward boolean
+local function reveal(backward)
+	clear()
+	local gen = generation
+	paint_dim()
+
+	local pending = collect_marks(backward)
+	table.sort(pending, function(a, b)
+		return a.dist < b.dist
+	end)
+
+	local index = 1
+	while pending[index] and pending[index].dist == 0 do
+		set_mark(pending[index])
+		index = index + 1
+	end
+	vim.cmd("redraw")
+	if not pending[index] then
+		return
+	end
+
+	local uv = vim.uv or vim.loop
+	local started = uv.now()
+	local timer = assert(uv.new_timer())
+	timers[timer] = true
+	timer:start(
+		16,
+		16,
+		vim.schedule_wrap(function()
+			if gen ~= generation then
+				return
+			end
+			local through = math.floor((uv.now() - started) / BLOOM_MS_PER_LINE)
+			while pending[index] and pending[index].dist <= through do
+				set_mark(pending[index])
+				index = index + 1
+			end
+			vim.cmd("redraw")
+			if not pending[index] then
+				if not timer:is_closing() then
+					timer:stop()
+					timer:close()
+				end
+				timers[timer] = nil
+			end
+		end)
+	)
 end
 
 --- After landing, the nearest occurrences of the character stay lit so
@@ -246,8 +373,7 @@ local function motion(kind, backward)
 	return function()
 		local count = vim.v.count1
 		local operator_pending = api.nvim_get_mode().mode:sub(1, 2) == "no"
-		M._paint(backward)
-		vim.cmd("redraw")
+		reveal(backward)
 
 		local ok, char = pcall(fn.getcharstr)
 		clear()
