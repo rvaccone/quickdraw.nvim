@@ -74,8 +74,8 @@ Override any group to restyle:
 
 | Group            | Default             | Meaning                 |
 | ---------------- | ------------------- | ----------------------- |
-| `QuickdrawRank1` | `#ff5faf`, bold     | Lands with `fx`         |
-| `QuickdrawRank2` | `#00d7ff`, bold     | Lands with `2fx`        |
+| `QuickdrawRank1` | `#a8c080` (matcha), bold     | Lands with `fx`         |
+| `QuickdrawRank2` | `#e07a5f` (terracotta), bold     | Lands with `2fx`        |
 | `QuickdrawDim`   | Linked to `Comment` | Everything out of reach |
 
 `:checkhealth quickdraw` reports version, keymaps, and conflicts.

@@ -20,17 +20,18 @@ local trail_active = false
 
 --- The letters themselves are restyled — bold, in quickdraw's own two
 --- identity colors — never boxed with a background. Guidance must stand
---- apart from the buffer, so the colors deliberately come from outside
---- typical code palettes: theme-derived colors are either alarms or
---- camouflage. Override the groups to restyle.
+--- apart from the buffer, so the colors are quickdraw's own rather than
+--- theme-derived: matcha for the common one-keystroke mark (the calm
+--- one), terracotta for the two-keystroke accent. Override the groups to
+--- restyle.
 local function ensure_highlights()
 	api.nvim_set_hl(0, "QuickdrawRank1", {
-		fg = 0xFF5FAF,
+		fg = 0xA8C080,
 		bold = true,
 		default = true,
 	})
 	api.nvim_set_hl(0, "QuickdrawRank2", {
-		fg = 0x00D7FF,
+		fg = 0xE07A5F,
 		bold = true,
 		default = true,
 	})
