@@ -31,7 +31,7 @@ and no new motions to learn. If the character you want is not lit, it is
 more than two occurrences away, and a plugin built for long jumps is the
 better tool.
 
-Quickdraw has no configuration. It requires Neovim 0.10+.
+Quickdraw's only options are its two colors. It requires Neovim 0.10+.
 
 ## Installation
 
@@ -41,6 +41,17 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim) (recommended):
 {
     "rvaccone/quickdraw.nvim",
     opts = {},
+}
+```
+
+To change the colors:
+
+```lua
+opts = {
+    colors = {
+        rank1 = "#a8c080", -- matcha
+        rank2 = "#e07a5f", -- terracotta
+    },
 }
 ```
 
@@ -70,7 +81,8 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim) (recommended):
 The letters themselves are recolored and bolded; nothing is drawn behind
 them. The two rank colors are quickdraw's own, chosen from outside
 typical code palettes so targets never blend into syntax highlighting.
-Override any group to restyle:
+Set them in `opts.colors`, or override the groups directly; colors given
+in setup win over colorscheme definitions:
 
 | Group            | Default             | Meaning                 |
 | ---------------- | ------------------- | ----------------------- |

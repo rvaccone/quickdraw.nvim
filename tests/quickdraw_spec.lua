@@ -61,8 +61,22 @@ local function marks(group)
 	return found
 end
 
-test("setup rejects options", function()
-	ok(not pcall(quickdraw.setup, { delay_ms = 100 }), "options must be rejected")
+test("setup rejects everything except colors", function()
+	ok(not pcall(quickdraw.setup, { delay_ms = 100 }), "unknown options must be rejected")
+	ok(not pcall(quickdraw.setup, { colors = { rank3 = "#ffffff" } }), "unknown color must be rejected")
+	ok(not pcall(quickdraw.setup, { colors = { rank1 = "matcha" } }), "non-hex color must be rejected")
+	ok(not pcall(quickdraw.setup, { colors = "green" }), "colors must be a table")
+end)
+
+test("color options are applied to the highlight groups", function()
+	eq(api.nvim_get_hl(0, { name = "QuickdrawRank1", link = false }).fg, 0xA8C080, "matcha default")
+	eq(api.nvim_get_hl(0, { name = "QuickdrawRank2", link = false }).fg, 0xE07A5F, "terracotta default")
+
+	quickdraw.setup({ colors = { rank1 = "#123456" } })
+	eq(api.nvim_get_hl(0, { name = "QuickdrawRank1", link = false }).fg, 0x123456, "custom color applied")
+	eq(api.nvim_get_hl(0, { name = "QuickdrawRank2", link = false }).fg, 0xE07A5F, "other color untouched")
+
+	quickdraw.setup({ colors = { rank1 = "#a8c080" } })
 end)
 
 test("f jumps across lines to the next occurrence", function()

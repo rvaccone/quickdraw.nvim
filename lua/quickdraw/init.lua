@@ -18,22 +18,37 @@ local last = nil
 local pending_op = nil
 local trail_active = false
 
+---@class QuickdrawColors
+---@field rank1? string "#rrggbb" for the one-keystroke mark
+---@field rank2? string "#rrggbb" for the two-keystroke mark
+
+local DEFAULT_COLORS = { rank1 = "#a8c080", rank2 = "#e07a5f" }
+
+local colors = vim.deepcopy(DEFAULT_COLORS)
+local custom = { rank1 = false, rank2 = false }
+
+---@param hex string
+---@return integer
+local function to_int(hex)
+	return tonumber(hex:sub(2), 16) --[[@as integer]]
+end
+
 --- The letters themselves are restyled — bold, in quickdraw's own two
 --- identity colors — never boxed with a background. Guidance must stand
 --- apart from the buffer, so the colors are quickdraw's own rather than
 --- theme-derived: matcha for the common one-keystroke mark (the calm
---- one), terracotta for the two-keystroke accent. Override the groups to
---- restyle.
+--- one), terracotta for the two-keystroke accent. Colors given in setup
+--- are authoritative; the defaults stay overridable by highlight groups.
 local function ensure_highlights()
 	api.nvim_set_hl(0, "QuickdrawRank1", {
-		fg = 0xA8C080,
+		fg = to_int(colors.rank1),
 		bold = true,
-		default = true,
+		default = not custom.rank1,
 	})
 	api.nvim_set_hl(0, "QuickdrawRank2", {
-		fg = 0xE07A5F,
+		fg = to_int(colors.rank2),
 		bold = true,
-		default = true,
+		default = not custom.rank2,
 	})
 	api.nvim_set_hl(0, "QuickdrawDim", { link = "Comment", default = true })
 end
@@ -324,10 +339,32 @@ local function repeat_last(reverse)
 	end
 end
 
----@param opts table|nil
+--- The colors are the only options. Validation is strict and runs before
+--- anything is applied, so a bad config changes nothing.
+---@param opts { colors?: QuickdrawColors }|nil
 function M.setup(opts)
-	if opts ~= nil and next(opts) ~= nil then
-		error("quickdraw.nvim has no options")
+	opts = opts or {}
+	for key in pairs(opts) do
+		if key ~= "colors" then
+			error(("quickdraw.nvim: unknown option `%s` — the colors are the only options"):format(key))
+		end
+	end
+	if opts.colors ~= nil then
+		if type(opts.colors) ~= "table" then
+			error("quickdraw.nvim: `colors` must be a table")
+		end
+		for key, value in pairs(opts.colors) do
+			if key ~= "rank1" and key ~= "rank2" then
+				error(("quickdraw.nvim: unknown color `%s`"):format(key))
+			end
+			if type(value) ~= "string" or not value:match("^#%x%x%x%x%x%x$") then
+				error(('quickdraw.nvim: `colors.%s` must be "#rrggbb"'):format(key))
+			end
+		end
+		for key, value in pairs(opts.colors) do
+			colors[key] = value
+			custom[key] = true
+		end
 	end
 
 	ensure_highlights()
