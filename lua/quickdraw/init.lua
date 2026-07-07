@@ -14,7 +14,7 @@ local RANK_GROUPS = { "QuickdrawRank1", "QuickdrawRank2", "QuickdrawRank3" }
 
 ---@type { kind: "f"|"t", backward: boolean, char: string }|nil
 local last = nil
----@type { kind: "f"|"t", backward: boolean, char: string }|nil
+---@type { kind: "f"|"t", backward: boolean, char: string, repeating: boolean|nil }|nil
 local pending_op = nil
 local trail_active = false
 
@@ -69,9 +69,14 @@ end
 ---@param l integer
 ---@return { c: string, col: integer }[]
 local function line_chars(l)
+	local text = fn.getline(l)
+	-- Minified-file guard: nothing past this bound is on screen anyway.
+	if #text > 2000 then
+		text = text:sub(1, 2000)
+	end
 	local out = {}
 	local off = 0
-	for _, c in ipairs(fn.split(fn.getline(l), "\\zs")) do
+	for _, c in ipairs(fn.split(text, "\\zs")) do
 		out[#out + 1] = { c = c, col = off }
 		off = off + #c
 	end
@@ -252,8 +257,10 @@ end
 ---@param backward boolean
 ---@param char string
 ---@param count integer
-function M.jump(kind, backward, char, count)
-	local l, col = find(char, backward, count or 1)
+---@param repeating? boolean Repeats of t advance past the adjacent target, like native ;
+function M.jump(kind, backward, char, count, repeating)
+	count = count or 1
+	local l, col = find(char, backward, count)
 	if not l then
 		return
 	end
@@ -266,7 +273,17 @@ function M.jump(kind, backward, char, count)
 
 	local cursor = api.nvim_win_get_cursor(0)
 	if l == cursor[1] and col == cursor[2] then
-		return
+		if not (repeating and kind == "t") then
+			return
+		end
+		l, col = find(char, backward, count + 1)
+		if not l then
+			return
+		end
+		l, col = adjust_t(l, col, backward, #char)
+		if not l then
+			return
+		end
 	end
 
 	local mode = api.nvim_get_mode().mode
@@ -296,8 +313,8 @@ end
 ---@param backward boolean
 ---@param char string
 ---@param count integer
-local function op_redispatch(kind, backward, char, count)
-	pending_op = { kind = kind, backward = backward, char = char }
+local function op_redispatch(kind, backward, char, count, repeating)
+	pending_op = { kind = kind, backward = backward, char = char, repeating = repeating }
 	local mode = api.nvim_get_mode().mode
 	local forced = mode:sub(3)
 	local keys = tostring(count) .. '"' .. vim.v.register .. vim.v.operator .. forced .. PLUG
@@ -340,10 +357,10 @@ local function repeat_last(reverse)
 			backward = not backward
 		end
 		if api.nvim_get_mode().mode:sub(1, 2) == "no" then
-			op_redispatch(last.kind, backward, last.char, vim.v.count1)
+			op_redispatch(last.kind, backward, last.char, vim.v.count1, true)
 			return
 		end
-		M.jump(last.kind, backward, last.char, vim.v.count1)
+		M.jump(last.kind, backward, last.char, vim.v.count1, true)
 	end
 end
 
@@ -383,7 +400,7 @@ function M.setup(opts)
 
 	vim.keymap.set("o", "<Plug>(quickdraw-op)", function()
 		if pending_op then
-			M.jump(pending_op.kind, pending_op.backward, pending_op.char, vim.v.count1)
+			M.jump(pending_op.kind, pending_op.backward, pending_op.char, vim.v.count1, pending_op.repeating)
 		end
 	end, { desc = "Quickdraw operator target" })
 
