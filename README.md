@@ -16,6 +16,11 @@
     </p>
 </div>
 
+<!-- Demo -->
+<div align="center">
+    <img src="demo/demo.gif" alt="quickdraw.nvim demo" />
+</div>
+
 ## About
 
 Quickdraw.nvim extends `f`, `t`, `F`, and `T` to reach any visible line and
@@ -32,7 +37,7 @@ and no new motions to learn. If the character you want is not lit, it is
 more than three occurrences away, and a plugin built for long jumps is the
 better tool.
 
-Quickdraw's only options are its two colors. It requires Neovim 0.10+.
+Quickdraw's only options are its three colors. It requires Neovim 0.10+.
 
 ## Installation
 
