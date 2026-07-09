@@ -1,0 +1,128 @@
+*quickdraw.txt*                             Press f. See how far it reaches.
+
+==============================================================================
+CONTENTS                                                 *quickdraw-contents*
+
+  Introduction ............................. |quickdraw-introduction|
+  Requirements ............................. |quickdraw-requirements|
+  Setup .................................... |quickdraw-setup|
+  Configuration ............................ |quickdraw-configuration|
+  Motions .................................. |quickdraw-motions|
+  Highlights ............................... |quickdraw-highlights|
+  Health ................................... |quickdraw-health|
+  Limits ................................... |quickdraw-limits|
+
+==============================================================================
+INTRODUCTION                                         *quickdraw-introduction*
+
+Quickdraw extends |f|, |t|, |F| and |T| to reach any visible line and shows
+the cost of every jump before you take it. When you press `f`, the view
+dims and each reachable character is colored by how many keystrokes it
+takes to land on it:
+
+  - The first color means `fx` lands there.
+  - The second color means `2fx` lands there.
+  - The third color means `3fx` lands there.
+
+You type real characters from the text. There are no hint labels to read
+and no new motions to learn. If the character you want is not lit, it is
+more than three occurrences away, and a plugin built for long jumps is the
+better tool.
+
+==============================================================================
+REQUIREMENTS                                         *quickdraw-requirements*
+
+Neovim 0.10 or newer. The rank colors need 'termguicolors'.
+
+==============================================================================
+SETUP                                                       *quickdraw-setup*
+
+With lazy.nvim: >lua
+    {
+        "rvaccone/quickdraw.nvim",
+        ---@type QuickdrawConfig
+        opts = {},
+    }
+<
+`require("quickdraw").setup()` maps `f`, `F`, `t`, `T`, `;` and `,` in
+normal, visual and operator-pending modes. Buffer-local mappings of the
+same keys win over quickdraw, which serves as the per-filetype escape
+hatch.
+
+==============================================================================
+CONFIGURATION                                       *quickdraw-configuration*
+
+The colors are the only options. >lua
+    require("quickdraw").setup({
+        colors = {
+            rank1 = "#a8c080",
+            rank2 = "#e07a5f",
+            rank3 = "#8da9c4",
+        },
+    })
+<
+Each value must be a "#rrggbb" string. Validation is strict and runs
+before anything is applied, so a bad configuration changes nothing.
+
+Colors given in setup are authoritative and survive colorscheme changes.
+Untouched defaults stay overridable through the highlight groups listed
+under |quickdraw-highlights|.
+
+==============================================================================
+MOTIONS                                                   *quickdraw-motions*
+
+`f`, `t`, `F` and `T` keep their native meaning and gain viewport reach.
+The paint is instant: the highlights are the deciding interface, so there
+is no delay to configure. Pressing a motion and its target character at
+muscle-memory speed works exactly like native vim.
+
+Counts match the colors: `2fx` lands on the second occurrence, `3fx` on
+the third. Whitespace is jumpable but never painted. <Esc> cancels a
+pending motion.
+
+After a jump in normal mode, the nearest occurrences of the target
+character stay lit in each direction, so `;` and `,` are read decisions
+instead of blind repeats. The trail clears on the first key that is not a
+repeat.
+
+Repeating `t` with `;` advances past the adjacent target, like native
+vim. Cross-line jumps push the |jumplist|, so CTRL-O returns; same-line
+jumps stay native and do not.
+
+In operator-pending mode the paint appears as well: `dfx` shows you the
+census before you commit the character. Forward `f` and `t` are inclusive
+motions like their native forms, backward `F` and `T` stay exclusive, and
+forced motions (`dvf`) keep your override. Dot-repeat replays the whole
+change, including multiline deletes, and counts, registers and macros
+behave as they would with native motions.
+
+==============================================================================
+HIGHLIGHTS                                             *quickdraw-highlights*
+
+The letters themselves are restyled, never boxed with a background, so
+transparency passes through.
+
+  QuickdrawRank1   one keystroke, bold, default #a8c080
+  QuickdrawRank2   two keystrokes, bold, default #e07a5f
+  QuickdrawRank3   three keystrokes, bold, default #8da9c4
+  QuickdrawDim     everything else, links to |hl-Comment|
+
+Defaults are set with `default = true`, so a colorscheme or `:highlight`
+call can restyle them unless the same color was given in setup.
+
+==============================================================================
+HEALTH                                                     *quickdraw-health*
+
+`:checkhealth quickdraw` verifies the Neovim version, 'termguicolors',
+and that the six motions still belong to quickdraw rather than another
+plugin.
+
+==============================================================================
+LIMITS                                                     *quickdraw-limits*
+
+Lines are scanned to 2000 bytes; nothing past that bound is on screen in
+practice, and it keeps minified files cheap. Digraph input (`f` CTRL-K)
+is not instrumented. Folded lines are skipped, matching what the eye can
+see.
+
+vim:tw=78:ts=8:noet:ft=help:norl:

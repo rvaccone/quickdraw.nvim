@@ -38,6 +38,8 @@ more than three occurrences away, and a plugin built for long jumps is the
 better tool.
 
 Quickdraw's only options are its three colors. It requires Neovim 0.10+.
+See `:h quickdraw` for the full manual, and run `:checkhealth quickdraw`
+if the marks do not appear.
 
 ## Installation
 
@@ -92,12 +94,12 @@ typical code palettes so targets never blend into syntax highlighting.
 Set them in `opts.colors`, or override the groups directly; colors given
 in setup win over colorscheme definitions:
 
-| Group            | Default             | Meaning                 |
-| ---------------- | ------------------- | ----------------------- |
-| `QuickdrawRank1` | `#a8c080` (matcha), bold     | Lands with `fx`         |
+| Group            | Default                          | Meaning                 |
+| ---------------- | -------------------------------- | ----------------------- |
+| `QuickdrawRank1` | `#a8c080` (matcha), bold         | Lands with `fx`         |
 | `QuickdrawRank2` | `#e07a5f` (terracotta), bold     | Lands with `2fx`        |
 | `QuickdrawRank3` | `#8da9c4` (stoneware blue), bold | Lands with `3fx`        |
-| `QuickdrawDim`   | Linked to `Comment` | Everything out of reach |
+| `QuickdrawDim`   | Linked to `Comment`              | Everything out of reach |
 
 `:checkhealth quickdraw` reports version, keymaps, and conflicts.
 
